@@ -40,3 +40,16 @@ let channelProvider='all';
 document.querySelectorAll('.channel-filter').forEach(button=>button.onclick=()=>{channelProvider=button.dataset.provider;document.querySelectorAll('.channel-filter').forEach(item=>{const active=item===button;item.classList.toggle('active',active);item.setAttribute('aria-pressed',String(active))});renderChannels()});
 function renderChannels(){const q=$('#channel-search').value.trim().toLocaleLowerCase('it-IT'),list=$('#channel-list');list.replaceChildren();const found=channelData.filter(([,name,provider])=>(channelProvider==='all'||provider===channelProvider)&&`${name} ${provider}`.toLocaleLowerCase('it-IT').includes(q));$('#channel-count').textContent=`${found.length} ${channelProvider==='Mediaset Infinity'?'canali Mediaset':channelProvider==='RaiPlay'?'canali Rai':'canali live'}`;$('#channel-empty').hidden=found.length>0;for(const [id,name,provider] of found){const b=document.createElement('button');b.className='channel';b.innerHTML=`<span>${name}<small>${provider}</small></span><i>▶</i>`;b.onclick=()=>sendAction(`launch_channel_${id}`,b);list.append(b)}}
 $('#channel-search').oninput=renderChannels;renderChannels();consumePairLink();refresh();
+let deferredInstallPrompt=null;
+const installButton=$('#install-app');
+const installDialog=$('#install-dialog');
+window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();deferredInstallPrompt=event});
+installButton.addEventListener('click',async()=>{
+  if(!deferredInstallPrompt){installDialog.showModal();return}
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt=null;
+});
+window.addEventListener('appinstalled',()=>{deferredInstallPrompt=null;installButton.textContent='APP INSTALLATA';installButton.disabled=true});
+
+
