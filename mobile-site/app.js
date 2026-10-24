@@ -1,0 +1,42 @@
+const $ = (s) => document.querySelector(s);
+const channelData = [
+  ['rai1','Rai 1','RaiPlay'],['rai2','Rai 2','RaiPlay'],['rai3','Rai 3','RaiPlay'],['rainews24','Rai News 24','RaiPlay'],['raisport','Rai Sport','RaiPlay'],['raiplaysport1','RaiPlay Sport 1','RaiPlay'],['rai4','Rai 4','RaiPlay'],['rai5','Rai 5','RaiPlay'],['raimovie','Rai Movie','RaiPlay'],['raipremium','Rai Premium','RaiPlay'],['raistoria','Rai Storia','RaiPlay'],['italiana','Italiana','RaiPlay'],['raiyoyo','Rai Yoyo','RaiPlay'],['raigulp','Rai Gulp','RaiPlay'],['mediaset20','20 Mediaset','Mediaset Infinity'],['iris','Iris','Mediaset Infinity'],['twentyseven','TwentySeven','Mediaset Infinity'],['la5','La 5','Mediaset Infinity'],['cine34','Cine34','Mediaset Infinity'],['focus','Focus','Mediaset Infinity'],['topcrime','Top Crime','Mediaset Infinity'],['italia2','Italia 2','Mediaset Infinity'],['mediasetextra','Mediaset Extra','Mediaset Infinity'],['boing','Boing','Mediaset Infinity'],['cartoonito','Cartoonito','Mediaset Infinity'],['canale5','Canale 5','Mediaset Infinity'],['italia1','Italia 1','Mediaset Infinity'],['rete4','Rete 4','Mediaset Infinity'],['tgcom24','TGCOM24','Mediaset Infinity']
+];
+let connection = readConnection();
+let tvIsOn = false;
+function readConnection(){try{return JSON.parse(localStorage.getItem('tvmax.connection')||'null')}catch{return null}}
+function setNotice(message, kind=''){const el=$('#notice');el.textContent=message;el.dataset.kind=kind}
+function setState(label,online=false){$('#connection-label').textContent=label;$('#led').classList.toggle('on',online);$('#power').disabled=!online}
+function apiOptions(extra={}){return {targetAddressSpace:'local',...extra}}
+function endpoint(path){return `${connection.host.replace(/\/$/,'')}${path}`}
+function headers(){return {'Authorization':`Bearer ${connection.token}`,'Content-Type':'application/json'}}
+async function request(path, options={}){
+  if(!connection)throw new Error('PAIRING');
+  let response;
+  try{response=await fetch(endpoint(path),apiOptions({...options,headers:{...headers(),...(options.headers||{})}}))}
+  catch(error){throw new Error('NETWORK')}
+  let data={};try{data=await response.json()}catch{}
+  if(response.status===401)throw new Error('CODE');
+  if(response.status===403)throw new Error('ACCESS');
+  if(!response.ok)throw new Error(data.error||'COMANDO NON RIUSCITO');
+  return data;
+}
+async function refresh(){
+  if(!connection){setState('NON COLLEGATO');$('#screen-state').textContent='Collega il Mac di casa';return}
+  setState('RICERCA MITV…');$('#screen-state').textContent='Controllo collegamento';
+  try{const s=await request('/api/status');$('#tv-name').textContent=s.tv?.name||'MITV';tvIsOn=s.power===true;$('#screen-state').textContent=tvIsOn?'TV ACCESA · PRONTA':s.power===false?'TV IN STANDBY · WAKE-ON-LAN PRONTO':'TV SPENTA O IN STANDBY';$('#power').setAttribute('aria-label',tvIsOn?'Spegni televisione':'Accendi televisione');setState('COLLEGATO',true);setNotice('Collegamento protetto · Wi-Fi di casa','ok')}
+  catch(e){setState('NON RAGGIUNGIBILE');$('#screen-state').textContent='Mac non raggiungibile';if(e.message==='CODE'){setNotice('Codice non valido. Riapri la configurazione TV Max sul Mac e inseriscilo di nuovo.','error')}else if(e.message==='ACCESS'){setNotice('Consenti a TV Max di accedere alla rete locale nelle impostazioni del sito Chrome, poi riprova.','error')}else{setNotice('Non raggiungo il Mac. Verifica che sia acceso e sullo stesso Wi-Fi, poi tocca ⚙ per riprovare.','error')}}
+}
+function showSetup(){if(connection){$('#host-input').value=connection.host;$('#token-input').value=connection.token}$('#setup-dialog').showModal()}
+function consumePairLink(){if(!location.hash)return;const params=new URLSearchParams(location.hash.slice(1));const host=params.get('host'),token=params.get('key');if(host&&token){$('#host-input').value=host;$('#token-input').value=token;$('#setup-dialog').showModal();history.replaceState(null,'',location.pathname+location.search)}}
+$('#settings-open').onclick=showSetup;
+$('#setup-form').addEventListener('submit',async(e)=>{if(e.submitter?.value==='cancel')return;e.preventDefault();const button=$('#connect');button.disabled=true;button.textContent='VERIFICA…';const candidate={host:$('#host-input').value.trim().replace(/\/$/,''),token:$('#token-input').value.trim()};if(!/^http:\/\/(\d{1,3}\.){3}\d{1,3}:8765$/.test(candidate.host)||candidate.token.length<32){setNotice('Inserisci l’indirizzo e il codice mostrati su TV Max.','error');button.disabled=false;button.textContent='COLLEGA TV MAX';return}connection=candidate;try{localStorage.setItem('tvmax.connection',JSON.stringify(candidate));await request('/api/status');$('#setup-dialog').close();setNotice('Pairing completato. TV Max è collegata.','ok');await refresh()}catch(err){connection=null;localStorage.removeItem('tvmax.connection');setNotice(err.message==='CODE'?'Il codice di pairing non è corretto.':err.message==='ACCESS'?'Chrome deve consentire l’accesso alla rete locale per questo sito.':'Non risponde il Mac. Controlla Wi-Fi, indirizzo e servizio TV Max.','error')}finally{button.disabled=false;button.textContent='COLLEGA TV MAX'}});
+async function sendAction(action,button){if(!connection){showSetup();return}if(action==='power_off'&&!confirm('Spegni la MITV?'))return;if(button)button.disabled=true;try{await request('/api/command',{method:'POST',body:JSON.stringify({action})});const channel=channelData.find(([id])=>action===`launch_channel_${id}`);const appNames={launch_pluto:'Pluto TV',launch_rakuten:'Rakuten TV'};const app=appNames[action]||action.replace('launch_','').replaceAll('_',' ');setNotice(channel?`${channel[1]} avviato sulla MITV.`:action==='launch_pluto'||action==='launch_rakuten'?`${app} avviata: scegli un canale dalla guida sulla TV.`:`Comando inviato alla TV${action.startsWith('launch_')?`: ${app}`:'.'}`,'ok');if(action==='power_on'||action==='power_off')setTimeout(refresh,2200)}catch(e){if(e.message==='NETWORK'||e.message==='ACCESS'||e.message==='CODE')await refresh();else setNotice(`Comando non riuscito: ${e.message}.`,'error')}finally{if(button)button.disabled=false}}
+document.querySelectorAll('[data-action]').forEach(b=>b.addEventListener('click',()=>sendAction(b.dataset.action,b)));
+$('#power').onclick=()=>{const action=tvIsOn?'power_off':'power_on';if(confirm(tvIsOn?'Spegni la MITV?':'Invia il comando di accensione alla MITV?'))sendAction(action,$('#power'))};
+const keyActions={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',Enter:'select',Escape:'back',' ':'play_pause'};document.addEventListener('keydown',e=>{if($('#setup-dialog').open||e.repeat)return;const a=keyActions[e.key];if(a){e.preventDefault();sendAction(a)}});
+document.querySelectorAll('.tab').forEach(tab=>tab.onclick=()=>{document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t===tab));$('#apps-panel').hidden=tab.dataset.tab!=='apps';$('#channels-panel').hidden=tab.dataset.tab!=='channels'});
+let channelProvider='all';
+document.querySelectorAll('.channel-filter').forEach(button=>button.onclick=()=>{channelProvider=button.dataset.provider;document.querySelectorAll('.channel-filter').forEach(item=>{const active=item===button;item.classList.toggle('active',active);item.setAttribute('aria-pressed',String(active))});renderChannels()});
+function renderChannels(){const q=$('#channel-search').value.trim().toLocaleLowerCase('it-IT'),list=$('#channel-list');list.replaceChildren();const found=channelData.filter(([,name,provider])=>(channelProvider==='all'||provider===channelProvider)&&`${name} ${provider}`.toLocaleLowerCase('it-IT').includes(q));$('#channel-count').textContent=`${found.length} ${channelProvider==='Mediaset Infinity'?'canali Mediaset':channelProvider==='RaiPlay'?'canali Rai':'canali live'}`;$('#channel-empty').hidden=found.length>0;for(const [id,name,provider] of found){const b=document.createElement('button');b.className='channel';b.innerHTML=`<span>${name}<small>${provider}</small></span><i>▶</i>`;b.onclick=()=>sendAction(`launch_channel_${id}`,b);list.append(b)}}
+$('#channel-search').oninput=renderChannels;renderChannels();consumePairLink();refresh();
