@@ -1,5 +1,6 @@
-const CACHE='tvmax-remote90-v3';
+const CACHE='tvmax-remote90-v4';
 const FILES=['./','./index.html','./style.css','./app.js','./manifest.webmanifest','./icon.svg'];
+
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -8,6 +9,7 @@ self.addEventListener('install', event => {
       .then(() => self.skipWaiting())
   );
 });
+
 
 self.addEventListener('activate', event => {
   event.waitUntil(
@@ -19,10 +21,12 @@ self.addEventListener('activate', event => {
   );
 });
 
+
 self.addEventListener('fetch', event => {
   const request = event.request;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin || request.method !== 'GET') return;
+
 
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
@@ -40,3 +44,4 @@ self.addEventListener('fetch', event => {
     }
   })());
 });
+
