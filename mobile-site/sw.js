@@ -1,1 +1,42 @@
-const CACHE='tvmax-remote90-v2';const FILES=['./','./index.html','./style.css','./app.js','./manifest.webmanifest','./icon.svg'];self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting())));self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));self.addEventListener('fetch',e=>{const u=new URL(e.request.url);if(u.origin===location.origin)e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)))});
+const CACHE='tvmax-remote90-v3';
+const FILES=['./','./index.html','./style.css','./app.js','./manifest.webmanifest','./icon.svg'];
+
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE)
+      .then(cache => cache.addAll(FILES))
+      .then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys()
+      .then(keys => Promise.all(
+        keys.filter(key => key !== CACHE).map(key => caches.delete(key))
+      ))
+      .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', event => {
+  const request = event.request;
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin || request.method !== 'GET') return;
+
+  event.respondWith((async () => {
+    const cache = await caches.open(CACHE);
+    try {
+      const response = await fetch(request, { cache: 'no-cache' });
+      if (response.ok) await cache.put(request, response.clone());
+      return response;
+    } catch {
+      const cached = await cache.match(request);
+      if (cached) return cached;
+      if (request.mode === 'navigate') {
+        return (await cache.match('./index.html')) || (await cache.match('./'));
+      }
+      return Response.error();
+    }
+  })());
+});
