@@ -17,12 +17,15 @@
       <div class="brand"><span class="brand-mark">TV</span><div><strong>TV MAX</strong><small>REMOTE 90 · ANDROID EDITION</small></div></div>
       <button id="settings-open" class="icon-button" aria-label="Configura collegamento" title="Configura collegamento">⚙</button>
     </header>
+    <button id="install-app" class="install-app" type="button"><span aria-hidden="true">⬇</span> INSTALLA APP</button>
+
 
     <section class="screen" aria-label="Stato della televisione">
       <div class="screen-top"><span class="led" id="led"></span><span id="connection-label">NON COLLEGATO</span><span class="screen-clock">REMOTE 90</span></div>
       <div class="screen-main"><div><strong id="tv-name">MITV</strong><small id="screen-state">Collega il Mac di casa</small></div><button id="power" class="power-key" aria-label="Accendi o spegni televisione" disabled>⏻</button></div>
       <div id="notice" class="notice" role="status" aria-live="polite">Per usare il telecomando, collega il Mac sul Wi-Fi di casa.</div>
     </section>
+
 
     <section class="deck" aria-label="Telecomando TV Max">
       <div class="deck-row top-keys"><button class="key key-home" data-action="home"><span>⌂</span><small>HOME</small></button><button class="key key-back" data-action="back"><span>↶</span><small>BACK</small></button><button class="key key-menu" data-action="menu"><span>☰</span><small>MENU</small></button></div>
@@ -39,6 +42,7 @@
       </div>
       <div class="deck-row function-keys"><button class="key key-red" data-action="mute" aria-label="Muto"><span>●</span><small>MUTO</small></button><button class="key key-green" data-action="play_pause"><span>▶Ⅱ</span><small>PLAY</small></button><button class="key key-yellow" data-action="rewind"><span>◀◀</span><small>INDIETRO</small></button><button class="key key-blue" data-action="fast_forward"><span>▶▶</span><small>AVANTI</small></button></div>
     </section>
+
 
     <nav class="tabs" aria-label="Contenuti TV"><button class="tab active" data-tab="apps">APP TV</button><button class="tab" data-tab="channels">CANALI</button></nav>
     <section id="apps-panel" class="content-panel">
@@ -71,23 +75,19 @@
       <p class="legal-note">Si apre l’app ufficiale del servizio sulla MITV. Disponibilità e accesso ai programmi dipendono dal servizio.</p>
     </section>
 
+
     <footer><span>TV MAX · MODEL TM-90</span><span>SOLO WI-FI DI CASA</span></footer>
   </main>
 
-  <dialog id="setup-dialog">
-    <form method="dialog" id="setup-form">
+
+  <dialog id="install-dialog">
+    <form method="dialog">
       <div class="dialog-head"><span class="brand-mark">TV</span><button class="icon-button" value="cancel" aria-label="Chiudi">×</button></div>
-      <h1>Collega il tuo Mac</h1>
-      <p>Il Mac con TV Max deve essere acceso e sulla stessa rete Wi-Fi del telefono.</p>
-      <label for="host-input">Indirizzo locale del Mac</label>
-      <input id="host-input" inputmode="url" autocomplete="url" placeholder="http://192.168.1.126:8765" required>
-      <label for="token-input">Codice di pairing</label>
-      <input id="token-input" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Incolla il codice mostrato su TV Max" required>
-      <button id="connect" class="connect-button" value="default">COLLEGA TV MAX</button>
-      <small>Il codice resta salvato solo in questo telefono. I comandi funzionano nella rete di casa.</small>
+      <h1>Installa TV Max</h1>
+      <p>Apri il menu ⋮ di Chrome e scegli <strong>Installa app</strong>. Se compare <strong>Aggiungi a schermata Home</strong>, tocca quella voce.</p>
+      <p>Si aggiunge l’app al telefono e si aggiorna automaticamente quando pubblichiamo una nuova versione.</p>
+      <button class="connect-button" value="cancel">HO CAPITO</button>
     </form>
   </dialog>
-  <script src="app.js" defer></script>
-  <script>if ('serviceWorker' in navigator) addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));</script>
-</body>
-</html>
+  <dialog id="setup-dialog">
+    <form method="dialog" id="setup-form">
