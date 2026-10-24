@@ -1,0 +1,16 @@
+{
+  "id": "./",
+  "name": "TV Max Remote 90",
+  "short_name": "TV Max",
+  "description": "Telecomando anni '90 per la MITV, solo sul Wi-Fi di casa.",
+  "lang": "it-IT",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#17191a",
+  "theme_color": "#17191a",
+  "icons": [
+    {"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}
+  ]
+}
